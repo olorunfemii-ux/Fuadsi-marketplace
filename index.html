@@ -426,15 +426,26 @@ function filterProducts(category) {
 
 function startSelling() {
   const choice = confirm(
-    "FUADSI Marketplace Seller Registration\n\n" +
+    "FUADSI Marketplace\n\n" +
     "OK = FUADSI Student Seller\n" +
-    "Cancel = External Campus Vendor"
+    "Cancel = Choose another option"
   );
 
   if (choice) {
     window.location.href = "register.html";
-  } else {
+    return;
+  }
+
+  const vendorChoice = confirm(
+    "Are you an external vendor selling at FUADSI?\n\n" +
+    "OK = External Vendor\n" +
+    "Cancel = Normal User"
+  );
+
+  if (vendorChoice) {
     window.location.href = "vendor-register.html";
+  } else {
+    window.location.href = "login.html";
   }
 }
 
