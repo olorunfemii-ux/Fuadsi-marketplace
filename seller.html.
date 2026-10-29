@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Become a Seller | FUADSI Marketplace</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: #f2f7f4;
+      color: #18352a;
+    }
+
+    header {
+      max-width: 650px;
+      margin: 0 auto 20px;
+    }
+
+    header a {
+      color: #087747;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .container {
+      max-width: 650px;
+      margin: auto;
+      padding: 25px;
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 4px 18px #0000000c;
+    }
+
+    h1 { color: #075e3b; }
+
+    .intro {
+      color: #66776e;
+      line-height: 1.6;
+    }
+
+    label {
+      display: block;
+      margin: 18px 0 7px;
+      font-weight: bold;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 13px;
+      border: 1px solid #ccd8d0;
+      border-radius: 8px;
+      font-size: 16px;
+      background: white;
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 22px;
+      padding: 14px;
+      background: #087747;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    #message {
+      margin-top: 18px;
+      padding: 12px;
+      border-radius: 8px;
+      overflow-wrap: anywhere;
+      line-height: 1.5;
+    }
+
+    .hidden { display: none; }
+  </style>
+</head>
+
+<body>
+  <header>
+    <a href="dashboard.html">← Back to Dashboard</a>
+  </header>
+
+  <main class="container">
+    <h1>Become a Seller 🏪</h1>
+
+    <p class="intro">
+      Apply to sell products on FUADSI Marketplace.
+      Your application will be reviewed before you can publish listings.
+    </p>
+
+    <form id="sellerForm">
+      <label for="businessName">Business or Seller Name</label>
+      <input
+        id="businessName"
+        type="text"
+        maxlength="100"
+        required
+        placeholder="Enter your business or seller name"
+      >
+
+      <label for="sellerType">Seller Type</label>
+      <select id="sellerType" required>
+        <option value="">Choose seller type</option>
+        <option value="student">Student Seller</option>
+        <option value="business">Campus Business</option>
+      </select>
+
+      <label for="description">Describe what you want to sell</label>
+      <textarea
+        id="description"
+        maxlength="1000"
+        required
+        placeholder="Tell us about your products or services"
+      ></textarea>
+
+      <button id="submitBtn" type="submit">
+        Submit Seller Application
+      </button>
+    </form>
+
+    <div id="message" class="hidden" role="status"></div>
+  </main>
+
+  <script type="module">
+    import { createClient } from
+      "https://esm.sh/@supabase/supabase-js@2";
+
+    const SUPABASE_URL =
+      "https://nqpictelbfxgllolwvtv.supabase.co";
+
+    const SUPABASE_KEY =
+      "sb_publishable__7FpB3Doz-4J379xf-YsZQ_zkcW8qQ_";
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const form = document.getElementById("sellerForm");
+    const button = document.getElementById("submitBtn");
+    const message = document.getElementById("message");
+
+    function showMessage(text) {
+      message.textContent = text;
+      message.classList.remove("hidden");
+    }
+
+    async function checkAccount() {
+      const { data, error } = await supabase.auth.getUser();
+
+      if (error || !data.user) {
+        window.location.replace("login.html");
+        return false;
+      }
+
+      return true;
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      button.disabled = true;
+      showMessage("Submitting your application...");
+
+      try {
+        const { data: authData, error: authError } =
+          await supabase.auth.getUser();
+
+        if (authError || !authData.user) {
+          showMessage("Please log in before applying to become a seller.");
+          window.location.replace("login.html");
+          return;
+        }
+
+        const user = authData.user;
+
+        const businessName =
+          document.getElementById("businessName").value.trim();
+
+        const sellerType =
+          document.getElementById("sellerType").value;
+
+        const description =
+          document.getElementById("description").value.trim();
+
+        if (!businessName || !sellerType || !description) {
+          showMessage("Please complete all fields.");
+          return;
+        }
+
+        const { error } = await supabase
+          .from("sellers")
+          .insert({
+            user_id: user.id,
+            business_name: businessName,
+            seller_type: sellerType,
+            description: description,
+            verification_status: "pending"
+          });
+
+        if (error) {
+          if (error.code === "23505") {
+            showMessage(
+              "You already have a seller application. Please contact the marketplace administrator for an update."
+            );
+          } else {
+            console.error("Seller application error:", error);
+            showMessage(
+              "We couldn't submit your application. Please check your database permissions and try again."
+            );
+          }
+          return;
+        }
+
+        form.reset();
+        showMessage(
+          "Application submitted successfully! Your status is Pending while it awaits review."
+        );
+
+      } catch (error) {
+        console.error(error);
+        showMessage("Something went wrong. Please try again.");
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    checkAccount();
+  </script>
+</body>
+</html>
