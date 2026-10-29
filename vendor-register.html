@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vendor Registration | FUADSI Marketplace</title>
+
+<style>
+{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f3f7f4;color:#173b2b}
+header{background:#fff;padding:18px;text-align:center;box-shadow:0 2px 10px #00000012}
+header a{color:#006633;text-decoration:none;font-size:20px;font-weight:bold}
+.container{max-width:480px;margin:30px auto;padding:28px 22px;background:#fff;border-radius:16px;box-shadow:0 5px 25px #00000012}
+h1{text-align:center;color:#006633;font-size:25px}
+.subtitle{text-align:center;color:#666;font-size:14px;line-height:1.6}
+label{display:block;font-weight:bold;margin:16px 0 7px;font-size:14px}
+input,textarea{width:100%;padding:13px;border:1px solid #ddd;border-radius:8px;font-size:15px;font-family:inherit}
+textarea{min-height:100px;resize:vertical}
+button{width:100%;margin-top:22px;padding:14px;background:#006633;color:white;border:0;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer}
+button:disabled{opacity:.6;cursor:not-allowed}
+.message{display:none;margin-top:15px;padding:12px;border-radius:8px;font-size:14px;line-height:1.5;overflow-wrap:anywhere}
+.success{display:block;background:#e3f6e9;color:#006633}
+.error{display:block;background:#ffe8e8;color:#a30000}
+.links{text-align:center;margin-top:20px;font-size:14px}
+.links a{color:#006633;font-weight:bold}
+footer{text-align:center;padding:20px;font-size:12px;color:#666}
+@media(max-width:520px){.container{margin:20px 12px}}
+</style>
+</head>
+
+<body>
+<header><a href="index.html">FUADSI Marketplace</a></header>
+
+<main class="container">
+<h1>External Vendor Registration</h1>
+<p class="subtitle">
+Register your business to apply to sell to the FUADSI community.
+Your application must be approved before you can sell.
+</p>
+
+<form id="vendorForm">
+<label for="contactName">Full Name</label>
+<input id="contactName" type="text" autocomplete="name" maxlength="100" required>
+
+<label for="businessName">Business Name</label>
+<input id="businessName" type="text" maxlength="150" required>
+
+<label for="phone">Phone Number</label>
+<input id="phone" type="tel" autocomplete="tel" maxlength="30" required>
+
+<label for="email">Email Address</label>
+<input id="email" type="email" autocomplete="email" maxlength="254" required>
+
+<label for="password">Password</label>
+<input id="password" type="password" autocomplete="new-password" minlength="8" required>
+
+<label for="confirmPassword">Confirm Password</label>
+<input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" required>
+
+<label for="description">Business Description</label>
+<textarea id="description" maxlength="1000" placeholder="Describe your products or services" required></textarea>
+
+<button id="submitButton" type="submit">Create Account & Apply</button>
+<div id="message" class="message" role="status" aria-live="polite"></div>
+</form>
+
+<p class="links">Already registered? <a href="vendor-login.html">Vendor Login</a></p>
+<p class="links"><a href="index.html">Back to Marketplace</a></p>
+</main>
+
+<footer>© 2026 FUADSI Marketplace. Independent campus marketplace.</footer>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const SUPABASE_URL = "https://nqpictelbfxgllolwvtv.supabase.co";
+const SUPABASE_KEY = "sb_publishable__7FpB3Doz-4J379xf-YsZQ_zkcW8qQ_";
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const form = document.getElementById("vendorForm");
+const button = document.getElementById("submitButton");
+const message = document.getElementById("message");
+
+function showMessage(text, type) {
+  message.textContent = text;
+  message.className = "message " + type;
+}
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const contactName = document.getElementById("contactName").value.trim();
+  const businessName = document.getElementById("businessName").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  const confirmPassword = document.getElementById("confirmPassword").value;
+  const description = document.getElementById("description").value.trim();
+
+  if (password !== confirmPassword) {
+    showMessage("Passwords do not match.", "error");
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = "Creating account...";
+
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: window.location.origin +
+          window.location.pathname.replace(/[^/]$/, "vendor-login.html"),
+        data: {
+          full_name: contactName,
+          account_type: "external_vendor"
+        }
+      }
+    });
+
+    if (error) throw error;
+
+    if (!data.user) {
+      throw new Error("Account creation could not be confirmed. Please try again.");
+    }
+
+    if (!data.session) {
+      showMessage(
+        "Your account has been created. Confirm your email, then log in through Vendor Login to complete your application.",
+        "success"
+      );
+      form.reset();
+      return;
+    }
+
+    const { error: applicationError } = await supabase
+      .from("external_vendors")
+      .insert({
+        user_id: data.user.id,
+        contact_name: contactName,
+        business_name: businessName,
+        phone,
+        business_description: description
+      });
+
+    if (applicationError) {
+      showMessage(
+        "Your account was created, but the application could not be saved. Please use Vendor Login and contact the marketplace administrator to complete your application.",
+        "error"
+      );
+      return;
+    }
+
+    showMessage(
+      "Your vendor application has been submitted and is pending administrator approval.",
+      "success"
+    );
+    form.reset();
+
+  } catch (error) {
+    showMessage(error.message || "Registration failed. Please try again.", "error");
+  } finally {
+    button.disabled = false;
+    button.textContent = "Create Account & Apply";
+  }
+});
+</script>
+</body>
+</html>
