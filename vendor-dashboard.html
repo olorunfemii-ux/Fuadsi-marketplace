@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vendor Dashboard | FUADSI Marketplace</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f7f6;
+      color: #1f2937;
+    }
+
+    header {
+      background: #075e3b;
+      color: white;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    header p {
+      margin: 6px 0 0;
+      font-size: 13px;
+    }
+
+    button {
+      border: none;
+      border-radius: 7px;
+      padding: 11px 16px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #logoutButton {
+      background: white;
+      color: #075e3b;
+    }
+
+    main {
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 0 16px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 22px;
+      margin-bottom: 20px;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      color: #075e3b;
+    }
+
+    .detail {
+      padding: 12px 0;
+      border-bottom: 1px solid #e5e7eb;
+      overflow-wrap: anywhere;
+    }
+
+    .detail:last-child {
+      border-bottom: none;
+    }
+
+    .label {
+      display: block;
+      color: #6b7280;
+      font-size: 13px;
+      margin-bottom: 5px;
+    }
+
+    .value {
+      font-weight: 600;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 8px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: bold;
+      text-transform: capitalize;
+    }
+
+    .pending {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .approved {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .rejected {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .notice {
+      padding: 15px;
+      border-radius: 8px;
+      background: #eff6ff;
+      color: #1e40af;
+      line-height: 1.6;
+    }
+
+    .error {
+      padding: 15px;
+      border-radius: 8px;
+      background: #fee2e2;
+      color: #991b1b;
+      line-height: 1.6;
+    }
+
+    .muted {
+      color: #6b7280;
+      line-height: 1.6;
+    }
+
+    footer {
+      text-align: center;
+      color: #6b7280;
+      padding: 25px 15px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div>
+      <h1>FUADSI Marketplace</h1>
+      <p>Your Campus, Your Market.</p>
+    </div>
+
+    <button id="logoutButton" type="button">Log Out</button>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Vendor Dashboard</h2>
+      <p class="muted">
+        Manage your vendor account and check the status of your application.
+      </p>
+      <div id="loadingMessage">Loading your vendor account...</div>
+      <div id="errorMessage" hidden></div>
+    </section>
+
+    <section class="card" id="businessCard" hidden>
+      <h2>Business Information</h2>
+
+      <div class="detail">
+        <span class="label">Contact Person</span>
+        <span class="value" id="contactName">—</span>
+      </div>
+
+      <div class="detail">
+        <span class="label">Business Name</span>
+        <span class="value" id="businessName">—</span>
+      </div>
+
+      <div class="detail">
+        <span class="label">Phone Number</span>
+        <span class="value" id="phoneNumber">—</span>
+      </div>
+
+      <div class="detail">
+        <span class="label">Business Description</span>
+        <span class="value" id="businessDescription">Not provided</span>
+      </div>
+
+      <div class="detail">
+        <span class="label">Application Status</span>
+        <span id="applicationStatus" class="status pending">Pending</span>
+      </div>
+
+      <div class="detail">
+        <span class="label">Application Date</span>
+        <span class="value" id="applicationDate">—</span>
+      </div>
+    </section>
+
+    <section class="card" id="statusCard" hidden>
+      <h2>What Happens Next?</h2>
+      <div id="statusMessage" class="notice"></div>
+    </section>
+  </main>
+
+  <footer>
+    FUADSI Marketplace · Federal University of Agriculture and
+    Development Studies, Iragbiji
+  </footer>
+
+  <script>
+    const SUPABASE_URL =
+      "https://nqpictelbfxgllolwvtv.supabase.co";
+
+    const SUPABASE_PUBLISHABLE_KEY =
+      "sb_publishable__7FpB3Doz-4J379xf-YsZQ_zkcW8qQ_";
+
+    const supabaseClient = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY
+    );
+
+    const loadingMessage = document.getElementById("loadingMessage");
+    const errorMessage = document.getElementById("errorMessage");
+    const businessCard = document.getElementById("businessCard");
+    const statusCard = document.getElementById("statusCard");
+    const statusMessage = document.getElementById("statusMessage");
+
+    function showError(message) {
+      loadingMessage.hidden = true;
+      errorMessage.hidden = false;
+      errorMessage.textContent = message;
+      errorMessage.className = "error";
+    }
+
+    async function loadVendorDashboard() {
+      const {
+        data: { session },
+        error: sessionError
+      } = await supabaseClient.auth.getSession();
+
+      if (sessionError) {
+        showError("We couldn't check your login. Please try again.");
+        return;
+      }
+
+      if (!session) {
+        window.location.replace("login.html");
+        return;
+      }
+
+      const user = session.user;
+      const accountType = user.user_metadata?.account_type;
+
+      if (accountType !== "external_vendor") {
+        showError(
+          "This dashboard is for external vendors. Please log in with your vendor account."
+        );
+        return;
+      }
+
+      const { data: vendor, error } = await supabaseClient
+        .from("external_vendors")
+        .select(
+          "contact_name, business_name, phone, business_description, verification_status, created_at"
+        )
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (error) {
+        showError(
+          "We couldn't load your vendor application. Please refresh the page and try again."
+        );
+        console.error("Vendor dashboard error:", error);
+        return;
+      }
+
+      if (!vendor) {
+        showError(
+          "We couldn't find a vendor application linked to this account. Please log out and log in again. If the problem continues, contact the marketplace administrator."
+        );
+        return;
+      }
+
+      document.getElementById("contactName").textContent =
+        vendor.contact_name || "—";
+
+      document.getElementById("businessName").textContent =
+        vendor.business_name || "—";
+
+      document.getElementById("phoneNumber").textContent =
+        vendor.phone || "—";
+
+      document.getElementById("businessDescription").textContent =
+        vendor.business_description || "Not provided";
+
+      document.getElementById("applicationDate").textContent =
+        vendor.created_at
+          ? new Date(vendor.created_at).toLocaleDateString()
+          : "—";
+
+      const status = vendor.verification_status || "pending";
+      const statusElement = document.getElementById("applicationStatus");
+
+      statusElement.textContent = status;
+      statusElement.className = "status " + status;
+
+      if (status === "approved") {
+        statusMessage.textContent =
+          "Your vendor application has been approved. Your account is verified. Product listing will become available when the marketplace's product permissions and listing tools are ready.";
+      } else if (status === "rejected") {
+        statusMessage.textContent =
+          "Your application was rejected. Please contact the marketplace administrator for information about the decision and whether you can apply again.";
+      } else {
+        statusMessage.textContent =
+          "Your application is awaiting review. You can check this dashboard again later. Product listing will unlock after approval and setup of the listing tools.";
+      }
+
+      loadingMessage.hidden = true;
+      errorMessage.hidden = true;
+      businessCard.hidden = false;
+      statusCard.hidden = false;
+    }
+
+    document
+      .getElementById("logoutButton")
+      .addEventListener("click", async () => {
+        const button = document.getElementById("logoutButton");
+        button.disabled = true;
+        button.textContent = "Logging out...";
+
+        const { error } = await supabaseClient.auth.signOut();
+
+        if (error) {
+          button.disabled = false;
+          button.textContent = "Log Out";
+          alert("Logout failed. Please try again.");
+          return;
+        }
+
+        window.location.replace("login.html");
+      });
+
+    loadVendorDashboard();
+  </script>
+</body>
+</html>
