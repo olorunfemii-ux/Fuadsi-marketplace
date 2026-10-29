@@ -425,7 +425,17 @@ function filterProducts(category) {
 }
 
 function startSelling() {
-  alert("Seller registration is coming soon!");
+  const choice = confirm(
+    "FUADSI Marketplace Seller Registration\n\n" +
+    "OK = FUADSI Student Seller\n" +
+    "Cancel = External Campus Vendor"
+  );
+
+  if (choice) {
+    window.location.href = "register.html";
+  } else {
+    window.location.href = "vendor-register.html";
+  }
 }
 
 document.getElementById("searchInput")
