@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Dashboard | FUADSI Marketplace</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f6f4;
+      color: #18352a;
+    }
+
+    header {
+      background: #075e3b;
+      color: white;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    header h1 { margin: 0; font-size: 21px; }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 11px 15px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .logout { background: white; color: #075e3b; }
+
+    main {
+      max-width: 1000px;
+      margin: 25px auto;
+      padding: 0 15px;
+    }
+
+    .panel {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 18px;
+      box-shadow: 0 3px 12px #00000009;
+    }
+
+    .muted { color: #66776e; line-height: 1.5; }
+
+    #message {
+      padding: 12px;
+      border-radius: 8px;
+      background: #e8f5ed;
+      overflow-wrap: anywhere;
+    }
+
+    .application {
+      border: 1px solid #dce5df;
+      border-radius: 10px;
+      padding: 16px;
+      margin-top: 14px;
+    }
+
+    .application h3 { margin-top: 0; }
+
+    .status {
+      display: inline-block;
+      background: #fff2cf;
+      color: #795500;
+      padding: 5px 9px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .note {
+      background: #fff8e7;
+      border-left: 4px solid #d49a16;
+      padding: 13px;
+      line-height: 1.5;
+    }
+
+    footer {
+      text-align: center;
+      color: #66776e;
+      padding: 24px;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>FUADSI Admin Dashboard</h1>
+    <button class="logout" id="logoutBtn">Log out</button>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>Seller Applications</h2>
+      <p class="muted">
+        Review applications submitted by students and campus businesses.
+      </p>
+      <p id="message" role="status">Checking administrator access...</p>
+    </section>
+
+    <section class="panel">
+      <h2>Pending Applications</h2>
+      <div id="applications">
+        <p class="muted">Loading applications...</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3>Administrator security</h3>
+      <p class="note">
+        This page is only an interface. Seller approvals must also be
+        restricted by database permissions. Do not use approval controls
+        until the secure approval operation has been configured.
+      </p>
+    </section>
+  </main>
+
+  <footer>FUADSI Marketplace · Administrator Area</footer>
+
+  <script type="module">
+    import { createClient } from
+      "https://esm.sh/@supabase/supabase-js@2";
+
+    const SUPABASE_URL =
+      "https://nqpictelbfxgllolwvtv.supabase.co";
+
+    const SUPABASE_KEY =
+      "sb_publishable__7FpB3Doz-4J379xf-YsZQ_zkcW8qQ_";
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const message = document.getElementById("message");
+    const applications = document.getElementById("applications");
+
+    async function init() {
+      const { data: authData, error: authError } =
+        await supabase.auth.getUser();
+
+      if (authError || !authData.user) {
+        window.location.replace("login.html");
+        return;
+      }
+
+      const user = authData.user;
+
+      const { data: admin, error: adminError } = await supabase
+        .from("marketplace_admins")
+        .select("user_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (adminError || !admin) {
+        message.textContent =
+          "Access denied. This account is not registered as a marketplace administrator.";
+        applications.textContent = "";
+        return;
+      }
+
+      message.textContent =
+        "Administrator access confirmed for " + user.email + ".";
+
+      const { data, error } = await supabase
+        .from("sellers")
+        .select("id, business_name, description, seller_type, verification_status, created_at")
+        .eq("verification_status", "pending")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        applications.textContent =
+          "Could not load applications. Check the sellers table's administrator read permissions.";
+        console.error(error);
+        return;
+      }
+
+      applications.replaceChildren();
+
+      if (!data || data.length === 0) {
+        applications.textContent = "There are no pending applications.";
+        return;
+      }
+
+      data.forEach((seller) => {
+        const card = document.createElement("article");
+        card.className = "application";
+
+        const title = document.createElement("h3");
+        title.textContent = seller.business_name || "Unnamed seller";
+
+        const type = document.createElement("p");
+        type.textContent = "Seller type: " + seller.seller_type;
+
+        const description = document.createElement("p");
+        description.textContent = seller.description || "No description provided.";
+
+        const status = document.createElement("span");
+        status.className = "status";
+        status.textContent = "PENDING";
+
+        card.append(title, type, description, status);
+        applications.append(card);
+      });
+    }
+
+    document.getElementById("logoutBtn").addEventListener(
+      "click",
+      async () => {
+        await supabase.auth.signOut();
+        window.location.replace("login.html");
+      }
+    );
+
+    init();
+  </script>
+</body>
+</html>
