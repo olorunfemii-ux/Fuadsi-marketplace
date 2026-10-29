@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Admin Dashboard | FUADSI Marketplace</title>
+
   <style>
     * { box-sizing: border-box; }
 
@@ -65,6 +66,7 @@
       border-radius: 10px;
       padding: 16px;
       margin-top: 14px;
+      overflow-wrap: anywhere;
     }
 
     .application h3 { margin-top: 0; }
@@ -79,11 +81,12 @@
       font-weight: bold;
     }
 
-    .note {
-      background: #fff8e7;
-      border-left: 4px solid #d49a16;
-      padding: 13px;
-      line-height: 1.5;
+    .error {
+      color: #a12626;
+      background: #fff0f0;
+      padding: 12px;
+      border-radius: 8px;
+      overflow-wrap: anywhere;
     }
 
     footer {
@@ -102,26 +105,41 @@
 
   <main>
     <section class="panel">
-      <h2>Seller Applications</h2>
+      <h2>Administrator Overview</h2>
       <p class="muted">
-        Review applications submitted by students and campus businesses.
+        Review student verification requests, external vendor applications,
+        and marketplace seller applications.
       </p>
       <p id="message" role="status">Checking administrator access...</p>
     </section>
 
     <section class="panel">
-      <h2>Pending Applications</h2>
-      <div id="applications">
-        <p class="muted">Loading applications...</p>
+      <h2>Pending Seller Applications</h2>
+      <div id="sellers">
+        <p class="muted">Waiting for administrator access...</p>
       </div>
     </section>
 
     <section class="panel">
-      <h3>Administrator security</h3>
-      <p class="note">
-        This page is only an interface. Seller approvals must also be
-        restricted by database permissions. Do not use approval controls
-        until the secure approval operation has been configured.
+      <h2>Pending External Vendors</h2>
+      <div id="vendors">
+        <p class="muted">Waiting for administrator access...</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Pending Student Verifications</h2>
+      <div id="students">
+        <p class="muted">Waiting for administrator access...</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3>Security Notice</h3>
+      <p class="muted">
+        Applications can be reviewed here, but approval and rejection
+        controls will be added after their database permissions are secured.
+        Student verification documents remain private.
       </p>
     </section>
   </main>
@@ -141,7 +159,69 @@
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const message = document.getElementById("message");
-    const applications = document.getElementById("applications");
+    const sellersBox = document.getElementById("sellers");
+    const vendorsBox = document.getElementById("vendors");
+    const studentsBox = document.getElementById("students");
+
+    function showMessage(container, text, isError = false) {
+      const p = document.createElement("p");
+      p.className = isError ? "error" : "muted";
+      p.textContent = text;
+      container.replaceChildren(p);
+    }
+
+    function addField(card, label, value) {
+      const p = document.createElement("p");
+      const strong = document.createElement("strong");
+      strong.textContent = label + ": ";
+      p.append(strong, document.createTextNode(
+        value == null || value === "" ? "Not provided" : String(value)
+      ));
+      card.appendChild(p);
+    }
+
+    function addApplication(container, titleText, fields) {
+      const card = document.createElement("article");
+      card.className = "application";
+
+      const title = document.createElement("h3");
+      title.textContent = titleText || "Application";
+      card.appendChild(title);
+
+      fields.forEach(([label, value]) => addField(card, label, value));
+
+      const status = document.createElement("span");
+      status.className = "status";
+      status.textContent = "PENDING";
+      card.appendChild(status);
+
+      container.appendChild(card);
+    }
+
+    async function loadSection(container, rpcName, renderRow) {
+      showMessage(container, "Loading applications...");
+
+      const { data, error } = await supabase.rpc(rpcName);
+
+      if (error) {
+        console.error(rpcName + " error:", error);
+        showMessage(
+          container,
+          "Could not load this section: " + error.message,
+          true
+        );
+        return;
+      }
+
+      container.replaceChildren();
+
+      if (!data || data.length === 0) {
+        showMessage(container, "There are no pending applications.");
+        return;
+      }
+
+      data.forEach(row => renderRow(container, row));
+    }
 
     async function init() {
       const { data: authData, error: authError } =
@@ -163,53 +243,62 @@
       if (adminError || !admin) {
         message.textContent =
           "Access denied. This account is not registered as a marketplace administrator.";
-        applications.textContent = "";
+
+        showMessage(sellersBox, "Administrator access required.");
+        showMessage(vendorsBox, "Administrator access required.");
+        showMessage(studentsBox, "Administrator access required.");
         return;
       }
 
       message.textContent =
         "Administrator access confirmed for " + user.email + ".";
 
-      const { data, error } = await supabase
-        .from("sellers")
-        .select("id, business_name, description, seller_type, verification_status, created_at")
-        .eq("verification_status", "pending")
-        .order("created_at", { ascending: false });
+      await Promise.all([
+        loadSection(
+          sellersBox,
+          "admin_get_pending_sellers",
+          (container, row) => addApplication(
+            container,
+            row.business_name,
+            [
+              ["Seller type", row.seller_type],
+              ["Description", row.description],
+              ["Application ID", row.id],
+              ["Submitted", row.created_at]
+            ]
+          )
+        ),
 
-      if (error) {
-        applications.textContent =
-          "Could not load applications. Check the sellers table's administrator read permissions.";
-        console.error(error);
-        return;
-      }
+        loadSection(
+          vendorsBox,
+          "admin_get_pending_external_vendors",
+          (container, row) => addApplication(
+            container,
+            row.business_name,
+            [
+              ["Contact name", row.contact_name],
+              ["Phone", row.phone],
+              ["Description", row.business_description],
+              ["Application ID", row.id],
+              ["Submitted", row.created_at]
+            ]
+          )
+        ),
 
-      applications.replaceChildren();
-
-      if (!data || data.length === 0) {
-        applications.textContent = "There are no pending applications.";
-        return;
-      }
-
-      data.forEach((seller) => {
-        const card = document.createElement("article");
-        card.className = "application";
-
-        const title = document.createElement("h3");
-        title.textContent = seller.business_name || "Unnamed seller";
-
-        const type = document.createElement("p");
-        type.textContent = "Seller type: " + seller.seller_type;
-
-        const description = document.createElement("p");
-        description.textContent = seller.description || "No description provided.";
-
-        const status = document.createElement("span");
-        status.className = "status";
-        status.textContent = "PENDING";
-
-        card.append(title, type, description, status);
-        applications.append(card);
-      });
+        loadSection(
+          studentsBox,
+          "admin_get_pending_student_verifications",
+          (container, row) => addApplication(
+            container,
+            row.full_name,
+            [
+              ["Email", row.email],
+              ["Matric number", row.matric_number],
+              ["User ID", row.user_id]
+            ]
+          )
+        )
+      ]);
     }
 
     document.getElementById("logoutBtn").addEventListener(
@@ -220,7 +309,11 @@
       }
     );
 
-    init();
+    init().catch(error => {
+      console.error("Dashboard error:", error);
+      message.textContent =
+        "An unexpected error occurred. Refresh the page and check the browser console if the problem continues.";
+    });
   </script>
 </body>
 </html>
