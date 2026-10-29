@@ -140,68 +140,65 @@
     }
 
     async function routeAccount(user) {
-      /*
-       * The role in user metadata helps identify the account type,
-       * but the database records determine the account's actual status.
-       */
-      const accountType = user.user_metadata?.account_type;
+async function routeAccount(user) {
+  const accountType = user.user_metadata?.account_type;
 
-      if (accountType === "external_vendor") {
-        const { data: vendor, error } = await supabaseClient
-          .from("external_vendors")
-          .select("verification_status")
-          .eq("user_id", user.id)
-          .maybeSingle();
+  // Complete registration using the secure Supabase function.
+  const { data: registrationResult, error: registrationError } =
+    await supabaseClient.rpc("complete_account_registration");
 
-        if (error) {
-          showMessage(
-            "You are logged in, but we could not check your vendor application. Please try again.",
-            "error"
-          );
-          return;
-        }
+  if (registrationError) {
+    showMessage(
+      "We couldn't complete your registration. Please check your details or contact the marketplace administrator. " +
+      registrationError.message,
+      "error"
+    );
+    return;
+  }
 
-        if (!vendor) {
-          showMessage(
-            "Your account is logged in, but your vendor application has not been submitted yet. We need to finish that step before opening your vendor dashboard.",
-            "error"
-          );
-          return;
-        }
+  if (accountType === "external_vendor") {
+    const { data: vendor, error } = await supabaseClient
+      .from("external_vendors")
+      .select("verification_status")
+      .eq("user_id", user.id)
+      .maybeSingle();
 
-        window.location.href = "vendor-dashboard.html";
-        return;
-      }
-
-      /*
-       * Check that a student profile exists. Do not treat missing
-       * verification as approval.
-       */
-      const { data: profile, error: profileError } = await supabaseClient
-        .from("profiles")
-        .select("id, is_verified, student_verification_status")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (profileError) {
-        showMessage(
-          "You are logged in, but we could not load your student profile. Please try again.",
-          "error"
-        );
-        return;
-      }
-
-      if (!profile) {
-        showMessage(
-          "Your account exists, but your student profile is not ready yet. Please contact the marketplace administrator.",
-          "error"
-        );
-        return;
-      }
-
-      window.location.href = "dashboard.html";
+    if (error || !vendor) {
+      showMessage(
+        "Your account is logged in, but your vendor application could not be loaded. Please try again.",
+        "error"
+      );
+      return;
     }
 
+    window.location.href = "vendor-dashboard.html";
+    return;
+  }
+
+  if (accountType === "student") {
+    const { data: profile, error } = await supabaseClient
+      .from("profiles")
+      .select("id, is_verified, student_verification_status")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (error || !profile) {
+      showMessage(
+        "Your student profile could not be loaded. Please contact the marketplace administrator.",
+        "error"
+      );
+      return;
+    }
+
+    window.location.href = "dashboard.html";
+    return;
+  }
+
+  showMessage(
+    "Your account type is not recognized. Please contact the marketplace administrator.",
+    "error"
+  );
+}
     form.addEventListener("submit", async event => {
       event.preventDefault();
 
