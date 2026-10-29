@@ -1,339 +1,343 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register | FUADSI Marketplace</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<title>Register | FUADSI Marketplace</title>
+  <style>
+    * { box-sizing: border-box; }
 
-<style>
-* {
-  box-sizing: border-box;
-}
+    body {
+      margin: 0;
+      padding: 24px 16px;
+      font-family: Arial, sans-serif;
+      background: #f3f6f4;
+      color: #17251d;
+    }
 
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f3f7f4;
-  color: #173b2b;
-}
+    .container {
+      max-width: 480px;
+      margin: 20px auto;
+      background: white;
+      padding: 28px;
+      border-radius: 16px;
+      box-shadow: 0 5px 25px #00000010;
+    }
 
-header {
-  background: white;
-  padding: 18px;
-  text-align: center;
-  box-shadow: 0 2px 10px #00000012;
-}
+    h1 { margin-bottom: 8px; font-size: 27px; }
+    .subtitle { color: #647067; line-height: 1.5; }
 
-header a {
-  color: #006633;
-  text-decoration: none;
-  font-size: 20px;
-  font-weight: bold;
-}
+    label {
+      display: block;
+      margin: 16px 0 7px;
+      font-weight: bold;
+      font-size: 14px;
+    }
 
-.container {
-  max-width: 430px;
-  margin: 45px auto;
-  padding: 30px 22px;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 5px 25px #00000012;
-}
+    input, select, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccd5ce;
+      border-radius: 8px;
+      font-size: 16px;
+      background: white;
+    }
 
-h1 {
-  text-align: center;
-  color: #006633;
-  font-size: 25px;
-}
+    textarea { resize: vertical; min-height: 90px; }
 
-.subtitle {
-  text-align: center;
-  color: #666;
-  font-size: 14px;
-  line-height: 1.6;
-  margin-bottom: 25px;
-}
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 22px;
+      border: none;
+      border-radius: 8px;
+      background: #176b3a;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
 
-label {
-  display: block;
-  font-weight: bold;
-  margin: 15px 0 7px;
-  font-size: 14px;
-}
+    button:disabled { opacity: 0.6; }
 
-input {
-  width: 100%;
-  padding: 13px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 15px;
-}
+    .hidden { display: none; }
 
-input:focus {
-  outline: 2px solid #006633;
-}
+    #message {
+      margin-top: 18px;
+      padding: 12px;
+      border-radius: 8px;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
 
-button {
-  width: 100%;
-  margin-top: 25px;
-  padding: 14px;
-  background: #006633;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-}
+    .success { background: #e7f7eb; color: #155b2d; }
+    .error { background: #fff0ef; color: #a12620; }
 
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 14px;
+    }
 
-.message {
-  margin-top: 15px;
-  padding: 12px;
-  border-radius: 8px;
-  display: none;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.success {
-  background: #e3f6e9;
-  color: #006633;
-}
-
-.error {
-  background: #ffe8e8;
-  color: #a30000;
-}
-
-.login {
-  text-align: center;
-  margin-top: 20px;
-  font-size: 14px;
-}
-
-.login a {
-  color: #006633;
-  font-weight: bold;
-}
-
-footer {
-  text-align: center;
-  padding: 20px;
-  font-size: 12px;
-  color: #666;
-}
-
-@media(max-width: 500px) {
-  .container {
-    margin: 20px 12px;
-  }
-}
-</style>
+    a { color: #176b3a; }
+    .note { font-size: 13px; color: #68736b; line-height: 1.5; }
+  </style>
 </head>
 
 <body>
+  <main class="container">
+    <h1>Create your account</h1>
+    <p class="subtitle">Join FUADSI Marketplace — Your Campus, Your Market.</p>
 
-<header>
-  <a href="index.html">FUADSI Marketplace</a>
-</header>
+    <form id="registrationForm">
+      <label for="accountType">I want to register as</label>
+      <select id="accountType" required>
+        <option value="student">FUADSI Student</option>
+        <option value="vendor">External Vendor</option>
+      </select>
 
-<div class="container">
+      <div id="studentFields">
+        <label for="fullName">Full name</label>
+        <input id="fullName" autocomplete="name">
 
-  <h1>Create Your Account</h1>
+        <label for="username">Username</label>
+        <input id="username" autocomplete="username">
 
-  <p class="subtitle">
-    Join FUADSI Marketplace and connect with
-    buyers and sellers around campus.
-  </p>
+        <label for="matricNumber">Matriculation number</label>
+        <input id="matricNumber" autocomplete="off">
 
-  <form id="registerForm">
+        <p class="note">
+          Student verification and document submission will be completed
+          through the student verification process.
+        </p>
+      </div>
 
-    <label for="fullName">Full Name</label>
-    <input
-      type="text"
-      id="fullName"
-      placeholder="Enter your full name"
-      autocomplete="name"
-      maxlength="100"
-      required
-    >
+      <div id="vendorFields" class="hidden">
+        <label for="contactName">Contact person's name</label>
+        <input id="contactName" autocomplete="name" disabled>
 
-    <label for="username">Username</label>
-    <input
-      type="text"
-      id="username"
-      placeholder="Choose a username"
-      minlength="3"
-      maxlength="30"
-      pattern="[a-zA-Z0-9_]+"
-      required
-    >
+        <label for="businessName">Business name</label>
+        <input id="businessName" autocomplete="organization" disabled>
 
-    <label for="email">Email Address</label>
-    <input
-      type="email"
-      id="email"
-      placeholder="Enter your email"
-      autocomplete="email"
-      required
-    >
+        <label for="phone">Phone number</label>
+        <input id="phone" type="tel" autocomplete="tel" disabled>
 
-    <label for="password">Password</label>
-    <input
-      type="password"
-      id="password"
-      placeholder="Create a password"
-      autocomplete="new-password"
-      minlength="8"
-      required
-    >
+        <label for="businessDescription">Business description</label>
+        <textarea id="businessDescription" disabled></textarea>
 
-    <label for="confirmPassword">Confirm Password</label>
-    <input
-      type="password"
-      id="confirmPassword"
-      placeholder="Confirm your password"
-      autocomplete="new-password"
-      minlength="8"
-      required
-    >
+        <p class="note">
+          External vendor applications require approval before selling.
+        </p>
+      </div>
 
-    <button type="submit" id="registerButton">
-      Create Account
-    </button>
+      <label for="email">Email address</label>
+      <input id="email" type="email" autocomplete="email" required>
 
-    <div
-      id="message"
-      class="message"
-      role="status"
-      aria-live="polite"
-    ></div>
+      <label for="password">Password</label>
+      <input id="password" type="password" minlength="8"
+             autocomplete="new-password" required>
 
-  </form>
+      <label for="confirmPassword">Confirm password</label>
+      <input id="confirmPassword" type="password"
+             autocomplete="new-password" required>
 
-  <p class="login">
-    Already have an account?
-    <a href="login.html">Login</a>
-  </p>
+      <button id="submitButton" type="submit">Create Student Account</button>
+    </form>
 
-</div>
+    <div id="message" class="hidden" role="status" aria-live="polite"></div>
 
-<footer>
-  © 2026 FUADSI Marketplace.
-  Independent student marketplace.
-</footer>
+    <div class="footer">
+      Already registered? <a href="login.html">Log in here</a>
+      <br><br>
+      <a href="index.html">Back to marketplace</a>
+    </div>
+  </main>
 
-<script type="module">
+  <script>
+    const SUPABASE_URL = "https://nqpictelbfxgllolwvtv.supabase.co";
+    const SUPABASE_KEY = "sb_publishable__7FpB3Doz-4J379xf-YsZQ_zkcW8qQ_";
 
-import {
-  createClient
-} from "https://esm.sh/@supabase/supabase-js@2";
-
-const SUPABASE_URL = "https://nqpictelbfxgllolwvtv.supabase.co";
-
-const SUPABASE_KEY = "sb_publishable__7FpB3Doz-4J379xf-YsZQ_zkcW8qQ_";
-
-const form = document.getElementById("registerForm");
-
-const button = document.getElementById("registerButton");
-
-const message = document.getElementById("message");
-
-function showMessage(text, type) {
-  message.textContent = text;
-  message.className = "message " + type;
-  message.style.display = "block";
-}
-
-form.addEventListener("submit", async (event) => {
-  event.preventDefault();
-
-  const fullName =
-    document.getElementById("fullName").value.trim();
-
-  const username =
-    document.getElementById("username").value.trim();
-
-  const email =
-    document.getElementById("email").value.trim();
-
-  const password =
-    document.getElementById("password").value;
-
-  const confirmPassword =
-    document.getElementById("confirmPassword").value;
-
-  if (password !== confirmPassword) {
-    showMessage("Passwords do not match.", "error");
-    return;
-  }
-
-  if (
-    SUPABASE_URL === "YOUR_SUPABASE_URL" ||
-    SUPABASE_KEY === "YOUR_SUPABASE_PUBLISHABLE_KEY"
-  ) {
-    showMessage(
-      "Supabase connection is not configured yet.",
-      "error"
-    );
-    return;
-  }
-
-  button.disabled = true;
-  button.textContent = "Creating account...";
-
-  try {
-    const supabase = createClient(
+    const supabaseClient = window.supabase.createClient(
       SUPABASE_URL,
       SUPABASE_KEY
     );
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo:
-          window.location.origin +
-          window.location.pathname.replace(
-            /[^/]*$/,
-            "login.html"
-          ),
-        data: {
-          full_name: fullName,
-          username: username
-        }
-      }
-    });
+    const form = document.getElementById("registrationForm");
+    const accountType = document.getElementById("accountType");
+    const studentFields = document.getElementById("studentFields");
+    const vendorFields = document.getElementById("vendorFields");
+    const submitButton = document.getElementById("submitButton");
+    const message = document.getElementById("message");
 
-    if (error) {
-      throw error;
+    function showMessage(text, type) {
+      message.textContent = text;
+      message.className = type;
     }
 
-    showMessage(
-      "Registration request received! Check your email for a verification link.",
-      "success"
-    );
+    function updateAccountType() {
+      const isStudent = accountType.value === "student";
 
-    form.reset();
+      studentFields.classList.toggle("hidden", !isStudent);
+      vendorFields.classList.toggle("hidden", isStudent);
 
-  } catch (error) {
-    showMessage(
-      error.message || "Registration failed. Please try again.",
-      "error"
-    );
-  } finally {
-    button.disabled = false;
-    button.textContent = "Create Account";
-  }
-});
+      studentFields.querySelectorAll("input").forEach(input => {
+        input.disabled = !isStudent;
+        input.required = isStudent;
+      });
 
-</script>
+      vendorFields.querySelectorAll("input, textarea").forEach(input => {
+        input.disabled = isStudent;
+        input.required = !isStudent;
+      });
 
+      submitButton.textContent = isStudent
+        ? "Create Student Account"
+        : "Create Vendor Account";
+
+      message.className = "hidden";
+    }
+
+    accountType.addEventListener("change", updateAccountType);
+    updateAccountType();
+
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+
+      const type = accountType.value;
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const confirmPassword =
+        document.getElementById("confirmPassword").value;
+
+      if (password !== confirmPassword) {
+        showMessage("Your passwords do not match.", "error");
+        return;
+      }
+
+      if (password.length < 8) {
+        showMessage("Your password must contain at least 8 characters.", "error");
+        return;
+      }
+
+      const fullName = type === "student"
+        ? document.getElementById("fullName").value.trim()
+        : document.getElementById("contactName").value.trim();
+
+      const username = type === "student"
+        ? document.getElementById("username").value.trim()
+        : "";
+
+      const matricNumber = type === "student"
+        ? document.getElementById("matricNumber").value.trim()
+        : "";
+
+      const businessName = type === "vendor"
+        ? document.getElementById("businessName").value.trim()
+        : "";
+
+      const phone = type === "vendor"
+        ? document.getElementById("phone").value.trim()
+        : "";
+
+      const businessDescription = type === "vendor"
+        ? document.getElementById("businessDescription").value.trim()
+        : "";
+
+      if (type === "student" && !/^\d{4,}$/.test(matricNumber.replace(/\D/g, ""))) {
+        showMessage(
+          "Enter a valid matriculation number containing at least four digits.",
+          "error"
+        );
+        return;
+      }
+
+      if (type === "vendor" && (!businessName || !phone)) {
+        showMessage("Enter your business name and phone number.", "error");
+        return;
+      }
+
+      submitButton.disabled = true;
+      submitButton.textContent = "Creating account...";
+
+      try {
+        /*
+         * Save the application details temporarily in this browser session.
+         * Passwords are never saved here.
+         * A later authenticated application step must submit these details.
+         */
+        const application = type === "vendor"
+          ? {
+              account_type: "external_vendor",
+              contact_name: fullName,
+              business_name: businessName,
+              phone,
+              business_description: businessDescription
+            }
+          : {
+              account_type: "student",
+              full_name: fullName,
+              username,
+              matric_number: matricNumber
+            };
+
+        const { data, error } = await supabaseClient.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: window.location.origin +
+              window.location.pathname.replace(/register\.html$/, "login.html"),
+            data: application
+          }
+        });
+
+        if (error) throw error;
+
+        if (!data.user) {
+          throw new Error("Account creation did not complete. Please try again.");
+        }
+
+        /*
+         * Keep only non-secret application details for the next step.
+         * Do not assume the application has been saved to its database table.
+         */
+        sessionStorage.setItem(
+          "fuadsi_pending_application",
+          JSON.stringify({
+            user_id: data.user.id,
+            email,
+            ...application
+          })
+        );
+
+        if (data.session) {
+          showMessage(
+            type === "student"
+              ? "Your account was created. Student verification still needs to be completed."
+              : "Your account was created. Your vendor application still needs to be submitted for review.",
+            "success"
+          );
+        } else {
+          showMessage(
+            "Your account was created. Check your email to confirm it, then log in to continue. Keep this browser session open so your application details remain available. Your application has not yet been submitted for approval.",
+            "success"
+          );
+        }
+
+        form.reset();
+        accountType.value = "student";
+        updateAccountType();
+
+      } catch (error) {
+        showMessage(error.message || "Registration failed. Please try again.", "error");
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = accountType.value === "student"
+          ? "Create Student Account"
+          : "Create Vendor Account";
+      }
+    });
+  </script>
 </body>
 </html>
