@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Student Verification | FUADSI Marketplace</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f7f5;
+      color: #1f2937;
+    }
+
+    header {
+      background: #075e3b;
+      color: white;
+      padding: 22px;
+    }
+
+    header h1 {
+      margin: 0 0 7px;
+      font-size: 23px;
+    }
+
+    header p {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    main {
+      max-width: 760px;
+      margin: 30px auto;
+      padding: 0 16px;
+    }
+
+    .card {
+      background: white;
+      padding: 24px;
+      margin-bottom: 20px;
+      border-radius: 12px;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    h2 {
+      color: #075e3b;
+      margin-top: 0;
+    }
+
+    .description {
+      color: #64748b;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    label {
+      display: block;
+      margin: 18px 0 8px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    input,
+    select {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      background: white;
+      font-size: 15px;
+    }
+
+    input[type="file"] {
+      padding: 9px;
+      font-size: 13px;
+    }
+
+    button {
+      border: none;
+      border-radius: 7px;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .primary {
+      width: 100%;
+      margin-top: 22px;
+      background: #075e3b;
+      color: white;
+    }
+
+    .secondary {
+      background: #e8f5ed;
+      color: #075e3b;
+      margin-top: 14px;
+    }
+
+    .remove-button {
+      background: #fee2e2;
+      color: #991b1b;
+      margin-top: 10px;
+    }
+
+    .document-row {
+      border: 1px solid #e2e8f0;
+      border-radius: 9px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+
+    .notice {
+      background: #eff6ff;
+      color: #1e40af;
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .success {
+      background: #d1fae5;
+      color: #065f46;
+      padding: 14px;
+      border-radius: 8px;
+      line-height: 1.6;
+    }
+
+    .error {
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 14px;
+      border-radius: 8px;
+      line-height: 1.6;
+      overflow-wrap: anywhere;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 7px 12px;
+      border-radius: 20px;
+      font-weight: bold;
+      text-transform: capitalize;
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .status.approved {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .status.rejected {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    footer {
+      padding: 25px 15px;
+      text-align: center;
+      color: #64748b;
+      font-size: 13px;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>FUADSI Marketplace</h1>
+    <p>Your Campus, Your Market.</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Student Verification</h2>
+
+      <p class="description">
+        Verify your student status to establish your identity on
+        the FUADSI Marketplace. Submit your matriculation number
+        and at least one supporting document.
+      </p>
+
+      <div id="loadingMessage">Checking your account...</div>
+      <div id="pageMessage" class="hidden"></div>
+
+      <div id="accountInformation" class="hidden">
+        <p>
+          <strong>Account email:</strong>
+          <span id="accountEmail"></span>
+        </p>
+
+        <p>
+          <strong>Marketplace ID:</strong>
+          <span id="marketplaceId">Not assigned</span>
+        </p>
+
+        <p>
+          <strong>Verification status:</strong>
+          <span id="verificationStatus" class="status">Pending</span>
+        </p>
+      </div>
+    </section>
+
+    <section class="card hidden" id="verificationCard">
+      <h2>Submit Your Documents</h2>
+
+      <div class="notice">
+        Accepted formats: PDF, JPG, and PNG.
+        Each file must be no larger than 5 MB.
+        Your documents will be stored privately for verification.
+      </div>
+
+      <form id="verificationForm">
+        <label for="matricNumber">
+          Matriculation Number
+        </label>
+
+        <input
+          type="text"
+          id="matricNumber"
+          placeholder="Enter your matriculation number"
+          minlength="4"
+          maxlength="40"
+          required
+          autocomplete="off"
+        >
+
+        <label>Verification Documents</label>
+
+        <p class="description">
+          Upload at least one genuine document that supports your
+          student status. You can add more documents if needed.
+        </p>
+
+        <div id="documentList"></div>
+
+        <button
+          type="button"
+          class="secondary"
+          id="addDocumentButton"
+        >
+          + Add Another Document
+        </button>
+
+        <button
+          type="submit"
+          class="primary"
+          id="submitButton"
+        >
+          Submit for Verification
+        </button>
+      </form>
+    </section>
+
+    <section class="card">
+      <button type="button" class="secondary" id="logoutButton">
+        Log Out
+      </button>
+    </section>
+  </main>
+
+  <footer>
+    FUADSI Marketplace · Student Verification
+  </footer>
+
+  <script>
+    const SUPABASE_URL =
+      "https://nqpictelbfxgllolwvtv.supabase.co";
+
+    const SUPABASE_PUBLISHABLE_KEY =
+      "sb_publishable__7FpB3Doz-4J379xf-YsZQ_zkcW8qQ_";
+
+    const supabaseClient = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY
+    );
+
+    const loadingMessage =
+      document.getElementById("loadingMessage");
+
+    const pageMessage =
+      document.getElementById("pageMessage");
+
+    const verificationCard =
+      document.getElementById("verificationCard");
+
+    const verificationForm =
+      document.getElementById("verificationForm");
+
+    const documentList =
+      document.getElementById("documentList");
+
+    const submitButton =
+      document.getElementById("submitButton");
+
+    const allowedTypes = [
+      "application/pdf",
+      "image/jpeg",
+      "image/png"
+    ];
+
+    const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+    let currentUser = null;
+    let currentProfile = null;
+
+    function showMessage(message, type) {
+      pageMessage.textContent = message;
+      pageMessage.className = type;
+    }
+
+    function createDocumentRow() {
+      const row = document.createElement("div");
+      row.className = "document-row";
+
+      const label = document.createElement("label");
+      label.textContent = "Document Type";
+
+      const select = document.createElement("select");
+      select.className = "document-type";
+      select.required = true;
+
+      const options = [
+        ["student_id", "Student ID Card"],
+        ["admission_letter", "Admission Letter"],
+        ["tuition_receipt", "Tuition Receipt"],
+        ["registration_document", "Registration Document"],
+        ["student_portal", "Student Portal Evidence"],
+        ["other", "Other Supporting Document"]
+      ];
+
+      options.forEach(([value, text]) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = text;
+        select.appendChild(option);
+      });
+
+      const fileLabel = document.createElement("label");
+      fileLabel.textContent = "Choose File";
+
+      const fileInput = document.createElement("input");
+      fileInput.type = "file";
+      fileInput.className = "document-file";
+      fileInput.accept = ".pdf,.jpg,.jpeg,.png";
+      fileInput.required = true;
+
+      const removeButton = document.createElement("button");
+      removeButton.type = "button";
+      removeButton.className = "remove-button";
+      removeButton.textContent = "Remove Document";
+
+      removeButton.addEventListener("click", () => {
+        row.remove();
+      });
+
+      row.appendChild(label);
+      row.appendChild(select);
+      row.appendChild(fileLabel);
+      row.appendChild(fileInput);
+      row.appendChild(removeButton);
+
+      documentList.appendChild(row);
+    }
+
+    async function loadAccount() {
+      try {
+        const {
+          data: { session },
+          error: sessionError
+        } = await supabaseClient.auth.getSession();
+
+        if (sessionError) {
+          throw new Error("Unable to check your login. Please retry.");
+        }
+
+        if (!session) {
+          window.location.replace("login.html");
+          return;
+        }
+
+        currentUser = session.user;
+
+        if (
+          currentUser.user_metadata?.account_type !== "student"
+        ) {
+          loadingMessage.hidden = true;
+
+          showMessage(
+            "This page is for FUADSI student accounts. Please log in with your student account.",
+            "error"
+          );
+
+          return;
+        }
+
+        const { data: profile, error } = await supabaseClient
+          .from("profiles")
+          .select(
+            "id, matric_number, marketplace_id, student_verification_status"
+          )
+          .eq("id", currentUser.id)
+          .maybeSingle();
+
+        if (error) {
+          throw new Error(
+            "Unable to load your student profile. Please try again."
+          );
+        }
+
+        if (!profile) {
+          throw new Error(
+            "Your student profile was not found. Please contact the marketplace administrator."
+          );
+        }
+
+        currentProfile = profile;
+
+        document.getElementById("accountEmail").textContent =
+          currentUser.email || "Not available";
+
+        document.getElementById("marketplaceId").textContent =
+          profile.marketplace_id || "Assigned after valid matriculation details";
+
+        const status =
+          profile.student_verification_status || "pending";
+
+        const statusElement =
+          document.getElementById("verificationStatus");
+
+        statusElement.textContent = status;
+        statusElement.className = "status " + status;
+
+        document.getElementById(
+          "accountInformation"
+        ).classList.remove("hidden");
+
+        if (profile.matric_number) {
+          document.getElementById("matricNumber").value =
+            profile.matric_number;
+        }
+
+        if (status === "approved") {
+          showMessage(
+            "Your student status has been approved. You do not need to submit another application.",
+            "success"
+          );
+        } else {
+          verificationCard.classList.remove("hidden");
+
+          if (status === "rejected") {
+            showMessage(
+              "Your previous application was rejected. Check with the marketplace administrator before resubmitting.",
+              "error"
+            );
+          } else {
+            showMessage(
+              "Your current verification status is " +
+                status +
+                ". Submit your documents below.",
+              "notice"
+            );
+          }
+
+          createDocumentRow();
+        }
+      } catch (error) {
+        showMessage(error.message, "error");
+      } finally {
+        loadingMessage.hidden = true;
+      }
+    }
+
+    document
+      .getElementById("addDocumentButton")
+      .addEventListener("click", () => {
+        createDocumentRow();
+      });
+
+    verificationForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      if (!currentUser) {
+        showMessage(
+          "Your session has expired. Please log in again.",
+          "error"
+        );
+        return;
+      }
+
+      if (
+        currentProfile?.student_verification_status === "approved"
+      ) {
+        showMessage(
+          "Your student verification is already approved.",
+          "success"
+        );
+        return;
+      }
+
+      const matricNumber =
+        document.getElementById("matricNumber").value.trim();
+
+      const digits = matricNumber.replace(/[^0-9]/g, "");
+
+      if (digits.length < 4) {
+        showMessage(
+          "Your matriculation number must contain at least four digits.",
+          "error"
+        );
+        return;
+      }
+
+      const rows = [
+        ...documentList.querySelectorAll(".document-row")
+      ];
+
+      if (rows.length === 0) {
+        showMessage(
+          "Please add at least one verification document.",
+          "error"
+        );
+        return;
+      }
+
+      const selectedDocuments = [];
+
+      for (const row of rows) {
+        const type =
+          row.querySelector(".document-type").value;
+
+        const file =
+          row.querySelector(".document-file").files[0];
+
+        if (!file) {
+          showMessage(
+            "Please select a file for every document entry, or remove empty entries.",
+            "error"
+          );
+          return;
+        }
+
+        if (!allowedTypes.includes(file.type)) {
+          showMessage(
+            "Only PDF, JPG, and PNG documents are accepted.",
+            "error"
+          );
+          return;
+        }
+
+        if (file.size > MAX_FILE_SIZE) {
+          showMessage(
+            "Each document must be 5 MB or smaller.",
+            "error"
+          );
+          return;
+        }
+
+        selectedDocuments.push({ type, file });
+      }
+
+      submitButton.disabled = true;
+      submitButton.textContent = "Uploading Documents...";
+
+      const uploadedDocuments = [];
+
+      try {
+        for (const documentItem of selectedDocuments) {
+          const file = documentItem.file;
+
+          const safeName = file.name
+            .replace(/[^a-zA-Z0-9._-]/g, "_")
+            .slice(-100);
+
+          const storagePath =
+            currentUser.id +
+            "/" +
+            crypto.randomUUID() +
+            "-" +
+            safeName;
+
+          const { error: uploadError } =
+            await supabaseClient.storage
+              .from("student-verification")
+              .upload(storagePath, file, {
+                upsert: false,
+                contentType: file.type
+              });
+
+          if (uploadError) {
+            throw new Error(
+              "A document could not be uploaded. Check your connection and try again. Details: " +
+                uploadError.message
+            );
+          }
+
+          uploadedDocuments.push({
+            document_type: documentItem.type,
+            storage_path: storagePath
+          });
+        }
+
+        submitButton.textContent = "Submitting Application...";
+
+        const { error: submissionError } =
+          await supabaseClient.rpc(
+            "submit_student_verification",
+            {
+              p_matric_number: matricNumber,
+              p_documents: uploadedDocuments
+            }
+          );
+
+        if (submissionError) {
+          throw new Error(
+            "Your documents were uploaded, but the application could not be submitted. " +
+              submissionError.message
+          );
+        }
+
+        showMessage(
+          "Your verification application was submitted successfully. Your status is now pending review.",
+          "success"
+        );
+
+        verificationForm.reset();
+        documentList.replaceChildren();
+
+        const { data: refreshedProfile } =
+          await supabaseClient
+            .from("profiles")
+            .select(
+              "id, matric_number, marketplace_id, student_verification_status"
+            )
+            .eq("id", currentUser.id)
+            .maybeSingle();
+
+        if (refreshedProfile) {
+          currentProfile = refreshedProfile;
+
+          document.getElementById("matricNumber").value =
+            refreshedProfile.matric_number || "";
+
+          document.getElementById("marketplaceId").textContent =
+            refreshedProfile.marketplace_id || "Pending";
+
+          const statusElement =
+            document.getElementById("verificationStatus");
+
+          statusElement.textContent =
+            refreshedProfile.student_verification_status || "pending";
+
+          statusElement.className =
+            "status " +
+            (refreshedProfile.student_verification_status || "pending");
+        }
+
+        verificationCard.classList.add("hidden");
+      } catch (error) {
+        showMessage(error.message, "error");
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = "Submit for Verification";
+      }
+    });
+
+    document
+      .getElementById("logoutButton")
+      .addEventListener("click", async () => {
+        const { error } = await supabaseClient.auth.signOut();
+
+        if (error) {
+          showMessage(
+            "Logout failed. Please try again.",
+            "error"
+          );
+          return;
+        }
+
+        window.location.replace("login.html");
+      });
+
+    loadAccount();
+  </script>
+</body>
+</html>
